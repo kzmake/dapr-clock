@@ -12,12 +12,6 @@ import (
 	"github.com/kzmake/dapr-clock/constants"
 )
 
-type synchronizeEvent struct {
-	Hour   int `json:"hour"`
-	Minute int `json:"minute"`
-	Second int `json:"second"`
-}
-
 // Synchronize は EventSynchronized を発行します。
 func Synchronize(ctx context.Context, in *common.BindingEvent) ([]byte, error) {
 	log.Printf("binding(synchronizer): %v", in.Metadata)
@@ -32,7 +26,7 @@ func Synchronize(ctx context.Context, in *common.BindingEvent) ([]byte, error) {
 		return nil, err
 	}
 
-	payload, err := json.Marshal(&synchronizeEvent{Hour: time.Hour(), Minute: time.Minute(), Second: time.Second()})
+	payload, err := json.Marshal(map[string]interface{}{"hour": time.Hour(), "minute": time.Minute(), "second": time.Second()})
 	if err != nil {
 		return nil, err
 	}

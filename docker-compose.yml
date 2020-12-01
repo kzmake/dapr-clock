@@ -51,6 +51,7 @@ services:
     depends_on:
       - clock
     network_mode: service:clock
+    restart: always
   # hour-hand service + dapr sidecar
   hour-hand:
     build:
@@ -76,6 +77,7 @@ services:
     depends_on:
       - hour-hand
     network_mode: service:hour-hand
+    restart: always
   # minute-hand service + dapr sidecar
   minute-hand:
     build:
@@ -101,6 +103,7 @@ services:
     depends_on:
       - minute-hand
     network_mode: service:minute-hand
+    restart: always
   # second-hand service + dapr sidecar
   second-hand:
     build:
@@ -126,12 +129,16 @@ services:
     depends_on:
       - second-hand
     network_mode: service:second-hand
+    restart: always
   # ticker service + dapr sidecar
   ticker:
     build:
       context: .
       dockerfile: ./microservices/ticker/Dockerfile
     depends_on:
+      - hour-hand
+      - minute-hand
+      - second-hand
       - redis
       - placement
     networks:
@@ -151,12 +158,17 @@ services:
     depends_on:
       - ticker
     network_mode: service:ticker
+    restart: always
   # synchronizer service + dapr sidecar
   synchronizer:
     build:
       context: .
       dockerfile: ./microservices/synchronizer/Dockerfile
     depends_on:
+      - hour-hand
+      - minute-hand
+      - second-hand
+      - ticker
       - redis
       - placement
     networks:
@@ -176,6 +188,7 @@ services:
     depends_on:
       - synchronizer
     network_mode: service:synchronizer
+    restart: always
   # dapr placement service
   placement:
     image: daprio/dapr
