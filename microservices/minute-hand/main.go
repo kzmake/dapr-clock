@@ -10,7 +10,7 @@ import (
 	"github.com/kzmake/dapr-clock/microservices/minute-hand/handler"
 )
 
-var serviceAddress = ":3003"
+var serviceAddress = ":3000"
 
 func main() {
 	s, err := daprd.NewService(serviceAddress)

@@ -11,10 +11,6 @@ import (
 	"github.com/kzmake/dapr-clock/constants"
 )
 
-type nowResponse struct {
-	Hour int `json:"hour"`
-}
-
 // Now は現在の秒針を取得します。
 func Now(ctx context.Context, in *common.InvocationEvent) (*common.Content, error) {
 	log.Printf("invocation(now)")
@@ -29,12 +25,9 @@ func Now(ctx context.Context, in *common.InvocationEvent) (*common.Content, erro
 		return nil, err
 	}
 
-	hour, err := strconv.Atoi(string(item.Value))
-	if err != nil {
-		return nil, err
-	}
+	hour, _ := strconv.Atoi(string(item.Value))
 
-	payload, err := json.Marshal(&nowResponse{Hour: hour})
+	payload, err := json.Marshal(map[string]interface{}{"hour": hour})
 	if err != nil {
 		return nil, err
 	}

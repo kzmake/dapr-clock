@@ -1,0 +1,193 @@
+version: "3.7"
+services:
+  # for developer
+  dev:
+    image: golang:1.15
+    command: "tail -f /dev/null"
+    networks:
+      - dapr-clock
+  # web server
+  web:
+    image: traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dapr-clock
+    command: >-
+      --accesslog
+      --providers.docker=true
+      --providers.docker.exposedbydefault=false
+      --entrypoints.http.address=:80
+  # clock service + dapr sidecar
+  clock:
+    build:
+      context: .
+      dockerfile: ./microservices/clock/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+    labels: # GET /now
+      - traefik.enable=true
+      - traefik.http.middlewares.dapr.addprefix.prefix=/v1.0/invoke/clock/method
+      - traefik.http.routers.api.rule=HostRegexp(`{domain:.+}`)
+      - traefik.http.routers.api.middlewares=dapr@docker
+      - traefik.http.routers.api.entrypoints=http
+      - traefik.http.services.api.loadbalancer.server.port=3500
+      - traefik.docker.network=dapr-clock_dapr-clock # dirname_dapr-clock
+  clock-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id clock
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - clock
+    network_mode: service:clock
+  # hour-hand service + dapr sidecar
+  hour-hand:
+    build:
+      context: .
+      dockerfile: ./microservices/hour-hand/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+  hour-hand-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id hour-hand
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - hour-hand
+    network_mode: service:hour-hand
+  # minute-hand service + dapr sidecar
+  minute-hand:
+    build:
+      context: .
+      dockerfile: ./microservices/minute-hand/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+  minute-hand-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id minute-hand
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - minute-hand
+    network_mode: service:minute-hand
+  # second-hand service + dapr sidecar
+  second-hand:
+    build:
+      context: .
+      dockerfile: ./microservices/second-hand/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+  second-hand-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id second-hand
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - second-hand
+    network_mode: service:second-hand
+  # ticker service + dapr sidecar
+  ticker:
+    build:
+      context: .
+      dockerfile: ./microservices/ticker/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+  ticker-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id ticker
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - ticker
+    network_mode: service:ticker
+  # synchronizer service + dapr sidecar
+  synchronizer:
+    build:
+      context: .
+      dockerfile: ./microservices/synchronizer/Dockerfile
+    depends_on:
+      - redis
+      - placement
+    networks:
+      - dapr-clock
+  synchronizer-dapr:
+    image: daprio/daprd:edge
+    command: >-
+      ./daprd
+      -app-id synchronizer
+      -app-port 3000
+      -app-protocol grpc
+      -dapr-http-port 3500
+      -placement-host-address placement:50000
+      -components-path /components
+    volumes:
+      - ./components/:/components
+    depends_on:
+      - synchronizer
+    network_mode: service:synchronizer
+  # dapr placement service
+  placement:
+    image: daprio/dapr
+    command: "./placement -port 50000"
+    networks:
+      - dapr-clock
+  # statestore and pub/sub
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    networks:
+      - dapr-clock
+networks:
+  dapr-clock:

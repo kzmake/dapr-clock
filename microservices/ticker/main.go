@@ -9,7 +9,7 @@ import (
 	"github.com/kzmake/dapr-clock/microservices/ticker/handler"
 )
 
-var serviceAddress = ":3001"
+var serviceAddress = ":3000"
 
 func main() {
 	s, err := daprd.NewService(serviceAddress)

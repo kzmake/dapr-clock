@@ -12,7 +12,7 @@ import (
 var serviceAddress = ":3000"
 
 func main() {
-	s, err := daprd.NewService(":3000")
+	s, err := daprd.NewService(serviceAddress)
 	if err != nil {
 		log.Fatalf("failed to start the server: %+v", err)
 	}
