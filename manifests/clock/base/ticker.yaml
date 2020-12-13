@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticker
+  labels:
+    app: ticker
+spec:
+  selector:
+    app: ticker
+  ports:
+    - port: 80
+      targetPort: 3500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticker
+  labels:
+    app: ticker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticker
+  template:
+    metadata:
+      labels:
+        app: ticker
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "ticker"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
+    spec:
+      containers:
+        - name: ticker
+          image: ghcr.io/kzmake/dapr-clock/ticker:latest
+          command: ["/go/bin/app"]
+          ports:
+            - containerPort: 3500
+          imagePullPolicy: Always

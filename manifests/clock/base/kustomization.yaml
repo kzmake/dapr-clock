@@ -1,0 +1,7 @@
+resources:
+  - clock.yaml
+  - hour-hand.yaml
+  - minute-hand.yaml
+  - second-hand.yaml
+  - synchronizer.yaml
+  - ticker.yaml

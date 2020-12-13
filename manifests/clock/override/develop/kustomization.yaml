@@ -1,0 +1,8 @@
+bases:
+  - ../../base
+resources:
+  - pubsub.yaml
+  - statestore.yaml
+  - synchronizer.yaml
+  - ticker.yaml
+  - mtls.yaml

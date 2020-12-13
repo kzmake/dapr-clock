@@ -1,0 +1,45 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minute-hand
+  labels:
+    app: minute-hand
+spec:
+  selector:
+    app: minute-hand
+  ports:
+    - port: 80
+      targetPort: 3500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minute-hand
+  labels:
+    app: minute-hand
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: minute-hand
+  template:
+    metadata:
+      labels:
+        app: minute-hand
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "minute-hand"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
+    spec:
+      containers:
+        - name: minute-hand
+          image: ghcr.io/kzmake/dapr-clock/minute-hand:latest
+          command: ["/go/bin/app"]
+          ports:
+            - containerPort: 3000
+            - containerPort: 3500
+          imagePullPolicy: Always
