@@ -5,23 +5,31 @@ import (
 
 	daprd "github.com/dapr/go-sdk/service/grpc"
 
-	"github.com/kzmake/dapr-clock/constants"
-	"github.com/kzmake/dapr-clock/microservices/ticker/handler"
+	"github.com/kzmake/dapr-clock/microservices/ticker/infrastructure/pubsub"
+	"github.com/kzmake/dapr-clock/microservices/ticker/interface/controller"
+	"github.com/kzmake/dapr-clock/microservices/ticker/usecase/interactor"
 )
 
 var serviceAddress = ":3000"
 
 func main() {
-	s, err := daprd.NewService(serviceAddress)
+	s, err := pubsub.NewMovementService()
+	if err != nil {
+		panic(err)
+	}
+	i := interactor.NewTick(s)
+	c := controller.NewTick(i)
+
+	svc, err := daprd.NewService(serviceAddress)
 	if err != nil {
 		log.Fatalf("failed to start the server: %+v", err)
 	}
 
-	if err := s.AddBindingInvocationHandler(constants.ComponentTicker, handler.Tick); err != nil {
+	if err := svc.AddBindingInvocationHandler("ticker", c.Tick); err != nil {
 		log.Fatalf("error adding binding handler: %+v", err)
 	}
 
-	if err := s.Start(); err != nil {
+	if err := svc.Start(); err != nil {
 		log.Fatalf("server error: %+v", err)
 	}
 }
