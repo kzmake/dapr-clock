@@ -1,0 +1,24 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: dapr-invoke
+spec:
+  addPrefix:
+    prefix: /v1.0/invoke/clock/method
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: clock-ingress
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Method(`GET`) && Path(`/now`)
+      kind: Rule
+      middlewares:
+        - name: dapr-invoke
+      services:
+        - name: clock
+          port: 80

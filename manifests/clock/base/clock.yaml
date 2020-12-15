@@ -1,0 +1,45 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clock
+  labels:
+    app: clock
+spec:
+  selector:
+    app: clock
+  ports:
+    - port: 80
+      targetPort: 3500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clock
+  labels:
+    app: clock
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clock
+  template:
+    metadata:
+      labels:
+        app: clock
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "clock"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
+    spec:
+      containers:
+        - name: clock
+          image: ghcr.io/kzmake/dapr-clock/clock:latest
+          command: ["/go/bin/app"]
+          ports:
+            - containerPort: 3000
+            - containerPort: 3500
+          imagePullPolicy: Always

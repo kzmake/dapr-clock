@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: synchronizer
+  labels:
+    app: synchronizer
+spec:
+  selector:
+    app: synchronizer
+  ports:
+    - port: 80
+      targetPort: 3500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synchronizer
+  labels:
+    app: synchronizer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: synchronizer
+  template:
+    metadata:
+      labels:
+        app: synchronizer
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "synchronizer"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
+    spec:
+      containers:
+        - name: synchronizer
+          image: ghcr.io/kzmake/dapr-clock/synchronizer:latest
+          command: ["/go/bin/app"]
+          ports:
+            - containerPort: 3500
+          imagePullPolicy: Always

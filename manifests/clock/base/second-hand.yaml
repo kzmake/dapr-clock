@@ -1,0 +1,45 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: second-hand
+  labels:
+    app: second-hand
+spec:
+  selector:
+    app: second-hand
+  ports:
+    - port: 80
+      targetPort: 3500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-hand
+  labels:
+    app: second-hand
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: second-hand
+  template:
+    metadata:
+      labels:
+        app: second-hand
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "second-hand"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
+    spec:
+      containers:
+        - name: second-hand
+          image: ghcr.io/kzmake/dapr-clock/second-hand:latest
+          command: ["/go/bin/app"]
+          ports:
+            - containerPort: 3000
+            - containerPort: 3500
+          imagePullPolicy: Always
