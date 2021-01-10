@@ -6,39 +6,55 @@ import (
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/grpc"
 
-	"github.com/kzmake/dapr-clock/constants"
-	"github.com/kzmake/dapr-clock/microservices/second-hand/handler"
+	"github.com/kzmake/dapr-clock/microservices/common/domain/event"
+	"github.com/kzmake/dapr-clock/microservices/second-hand/infrastructure/pubsub"
+	"github.com/kzmake/dapr-clock/microservices/second-hand/infrastructure/statestore"
+	"github.com/kzmake/dapr-clock/microservices/second-hand/interface/controller"
+	"github.com/kzmake/dapr-clock/microservices/second-hand/usecase/interactor"
 )
 
 var serviceAddress = ":3000"
 
 func main() {
-	s, err := daprd.NewService(serviceAddress)
+	r, err := statestore.NewHandRepository()
+	if err != nil {
+		panic(err)
+	}
+	s, err := pubsub.NewMovementService()
+	if err != nil {
+		panic(err)
+	}
+	in := interactor.NewNow(r)
+	ii := interactor.NewIncrease(r, s)
+	is := interactor.NewSync(r)
+	c := controller.NewHand(in, ii, is)
+
+	svc, err := daprd.NewService(serviceAddress)
 	if err != nil {
 		log.Fatalf("failed to start the server: %+v", err)
 	}
 
-	if err := s.AddServiceInvocationHandler(constants.MethodNow, handler.Now); err != nil {
+	if err := svc.AddServiceInvocationHandler("now", c.Now); err != nil {
 		log.Fatalf("error adding invocation handler: %+v", err)
 	}
 
-	if err := s.AddTopicEventHandler(&common.Subscription{
-		PubsubName: constants.ComponentPubSub,
-		Topic:      constants.EventTicked,
+	if err := svc.AddTopicEventHandler(&common.Subscription{
+		PubsubName: "pubsub",
+		Topic:      event.Topic(event.Ticked{}),
 		Route:      "/increase",
-	}, handler.Increase); err != nil {
+	}, c.Increase); err != nil {
 		log.Fatalf("error adding event handler: %+v", err)
 	}
 
-	if err := s.AddTopicEventHandler(&common.Subscription{
-		PubsubName: constants.ComponentPubSub,
-		Topic:      constants.EventSynchronized,
+	if err := svc.AddTopicEventHandler(&common.Subscription{
+		PubsubName: "pubsub",
+		Topic:      event.Topic(event.Synchronized{}),
 		Route:      "/synchronize",
-	}, handler.Synchronize); err != nil {
+	}, c.Sync); err != nil {
 		log.Fatalf("error adding event handler: %+v", err)
 	}
 
-	if err := s.Start(); err != nil {
+	if err := svc.Start(); err != nil {
 		log.Fatalf("server error: %+v", err)
 	}
 }
